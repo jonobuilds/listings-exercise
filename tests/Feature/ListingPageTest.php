@@ -51,6 +51,26 @@ class ListingPageTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page->has('listings.data', 1));
     }
 
+    public function test_index_filters_by_an_inclusive_price_range(): void
+    {
+        foreach ([199_999, 200_000, 300_000, 300_001] as $price) {
+            Listing::factory()->live()->create(['price' => $price]);
+        }
+
+        $this->get('/?min_price=200000&max_price=300000&per_page=100')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('listings.data', 2)
+                ->where('listings.data', fn ($listings) => collect($listings)->pluck('price')->sort()->values()->all() === [200_000, 300_000])
+            );
+    }
+
+    public function test_index_rejects_a_minimum_price_above_the_maximum(): void
+    {
+        $this->get('/?min_price=400000&max_price=300000')
+            ->assertSessionHasErrors('min_price');
+    }
+
     public function test_index_filters_by_region(): void
     {
         $wanted = Branch::factory()->create(['region' => 'Manchester']);
@@ -85,11 +105,12 @@ class ListingPageTest extends TestCase
 
     public function test_index_passes_current_filters_back_to_the_page(): void
     {
-        $this->get('/?max_price=300000&min_bedrooms=2&property_type=flat')
+        $this->get('/?min_price=150000&max_price=300000&min_bedrooms=2&property_type=flat')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('filters', [
                     'property_type' => 'flat',
+                    'min_price' => 150000,
                     'max_price' => 300000,
                     'min_bedrooms' => 2,
                     'region' => null,

@@ -15,6 +15,7 @@ return new class extends Migration
             // One nullable column per criterion; null means "any". Mirrors
             // App\Data\ListingCriteria.
             $table->string('property_type')->nullable();
+            $table->unsignedInteger('min_price')->nullable();
             $table->unsignedInteger('max_price')->nullable();
             $table->unsignedTinyInteger('min_bedrooms')->nullable();
             $table->string('region')->nullable();

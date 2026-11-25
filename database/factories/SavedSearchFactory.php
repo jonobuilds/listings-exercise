@@ -24,6 +24,7 @@ class SavedSearchFactory extends Factory
         return [
             'user_id' => User::factory(),
             'property_type' => null,
+            'min_price' => null,
             'max_price' => null,
             'min_bedrooms' => null,
             'region' => null,

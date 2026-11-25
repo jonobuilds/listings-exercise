@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property PropertyType|null $property_type
+ * @property int|null $min_price
  * @property int|null $max_price
  * @property int|null $min_bedrooms
  * @property string|null $region
@@ -31,6 +32,7 @@ class SavedSearch extends Model
 
     protected $fillable = [
         'property_type',
+        'min_price',
         'max_price',
         'min_bedrooms',
         'region',
@@ -43,6 +45,7 @@ class SavedSearch extends Model
     {
         return [
             'property_type' => PropertyType::class,
+            'min_price' => 'integer',
             'max_price' => 'integer',
             'min_bedrooms' => 'integer',
         ];
@@ -60,6 +63,7 @@ class SavedSearch extends Model
     {
         return new ListingCriteria(
             propertyType: $this->property_type,
+            minPrice: $this->min_price,
             maxPrice: $this->max_price,
             minBedrooms: $this->min_bedrooms,
             region: $this->region,
@@ -77,6 +81,7 @@ class SavedSearch extends Model
     {
         $query
             ->where(fn (Builder $q) => $q->whereNull('property_type')->orWhere('property_type', $listing->property_type))
+            ->where(fn (Builder $q) => $q->whereNull('min_price')->orWhere('min_price', '<=', $listing->price))
             ->where(fn (Builder $q) => $q->whereNull('max_price')->orWhere('max_price', '>=', $listing->price))
             ->where(fn (Builder $q) => $q->whereNull('min_bedrooms')->orWhere('min_bedrooms', '<=', $listing->bedrooms))
             ->where(fn (Builder $q) => $q->whereNull('region')->orWhere('region', $listing->branch->region));

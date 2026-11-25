@@ -96,6 +96,7 @@ class ListingAlertTest extends TestCase
     {
         return [
             'wrong type' => [['property_type' => PropertyType::Detached, 'region' => 'Leeds']],
+            'under the minimum price' => [['min_price' => 300_001, 'region' => 'Leeds']],
             'over budget' => [['max_price' => 299_999, 'region' => 'Leeds']],
             'too few bedrooms' => [['min_bedrooms' => 3, 'region' => 'Leeds']],
             'wrong region' => [['region' => 'York', 'max_price' => 400_000]],
@@ -104,7 +105,7 @@ class ListingAlertTest extends TestCase
 
     public function test_limits_are_inclusive(): void
     {
-        SavedSearch::factory()->create(['max_price' => 300_000, 'min_bedrooms' => 2]);
+        SavedSearch::factory()->create(['min_price' => 300_000, 'max_price' => 300_000, 'min_bedrooms' => 2]);
 
         $this->publish($this->draftListing());
 

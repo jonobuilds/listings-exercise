@@ -39,6 +39,7 @@ class SavedSearchTest extends TestCase
         $this->actingAs($user)
             ->post('/saved-searches', [
                 'property_type' => 'flat',
+                'min_price' => '200000',
                 'max_price' => '300000',
                 'min_bedrooms' => '2',
                 'region' => 'Leeds',
@@ -47,6 +48,7 @@ class SavedSearchTest extends TestCase
 
         $search = $user->savedSearches()->sole();
         $this->assertSame(PropertyType::Flat, $search->property_type);
+        $this->assertSame(200_000, $search->min_price);
         $this->assertSame(300_000, $search->max_price);
         $this->assertSame(2, $search->min_bedrooms);
         $this->assertSame('Leeds', $search->region);
@@ -88,6 +90,10 @@ class SavedSearchTest extends TestCase
         $this->actingAs($user)
             ->post('/saved-searches', ['property_type' => 'castle', 'max_price' => '-1', 'min_bedrooms' => '99'])
             ->assertSessionHasErrors(['property_type', 'max_price', 'min_bedrooms']);
+
+        $this->actingAs($user)
+            ->post('/saved-searches', ['min_price' => '400000', 'max_price' => '300000'])
+            ->assertSessionHasErrors('min_price');
     }
 
     /**

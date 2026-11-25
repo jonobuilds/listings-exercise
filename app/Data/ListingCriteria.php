@@ -3,6 +3,8 @@
 namespace App\Data;
 
 use App\Enums\PropertyType;
+use Illuminate\Support\Fluent;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
 /**
@@ -10,7 +12,9 @@ use Illuminate\Validation\Rules\Enum;
  * saved search are both one of these.
  *
  * A null criterion means "any". Limits are inclusive: a listing at exactly
- * maxPrice, or with exactly minBedrooms, matches.
+ * minPrice or maxPrice, or with exactly minBedrooms, matches. Price is a
+ * range rather than just a maximum: there's no sort by price, so a max
+ * alone would bury a £400k budget under £150k flats.
  *
  * Adding a criterion means adding it here, to Listing::scopeMatching() and
  * SavedSearch::scopeMatchingListing(), and as a saved_searches column.
@@ -20,6 +24,7 @@ final readonly class ListingCriteria
 {
     public function __construct(
         public ?PropertyType $propertyType = null,
+        public ?int $minPrice = null,
         public ?int $maxPrice = null,
         public ?int $minBedrooms = null,
         public ?string $region = null,
@@ -34,6 +39,10 @@ final readonly class ListingCriteria
     {
         return [
             'property_type' => ['nullable', new Enum(PropertyType::class)],
+            'min_price' => [
+                'nullable', 'integer', 'min:0',
+                Rule::when(fn (Fluent $input) => filled($input->get('max_price')), ['lte:max_price']),
+            ],
             'max_price' => ['nullable', 'integer', 'min:0'],
             'min_bedrooms' => ['nullable', 'integer', 'min:0', 'max:20'],
             'region' => ['nullable', 'string', 'max:100'],
@@ -51,7 +60,8 @@ final readonly class ListingCriteria
 
         return new self(
             propertyType: ($type = $value('property_type')) !== null ? PropertyType::from($type) : null,
-            maxPrice: ($price = $value('max_price')) !== null ? (int) $price : null,
+            minPrice: ($min = $value('min_price')) !== null ? (int) $min : null,
+            maxPrice: ($max = $value('max_price')) !== null ? (int) $max : null,
             minBedrooms: ($bedrooms = $value('min_bedrooms')) !== null ? (int) $bedrooms : null,
             region: ($region = $value('region')) !== null ? (string) $region : null,
         );
@@ -60,12 +70,13 @@ final readonly class ListingCriteria
     /**
      * Keyed by input name, which is also the saved_searches column name.
      *
-     * @return array{property_type: ?string, max_price: ?int, min_bedrooms: ?int, region: ?string}
+     * @return array{property_type: ?string, min_price: ?int, max_price: ?int, min_bedrooms: ?int, region: ?string}
      */
     public function toArray(): array
     {
         return [
             'property_type' => $this->propertyType?->value,
+            'min_price' => $this->minPrice,
             'max_price' => $this->maxPrice,
             'min_bedrooms' => $this->minBedrooms,
             'region' => $this->region,

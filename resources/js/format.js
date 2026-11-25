@@ -17,19 +17,31 @@ export function formatDate(iso) {
 }
 
 /**
- * A one-line summary of a saved search, e.g. "Flat · Leeds · up to £300,000 · 2+ beds".
+ * A one-line summary of a saved search, e.g. "Flat · Leeds · £250,000–£300,000 · 2+ beds".
  */
 export function describeSearch(search) {
-    const { property_type, max_price, min_bedrooms, region } = search.criteria;
+    const { property_type, min_price, max_price, min_bedrooms, region } = search.criteria;
 
     return [
         property_type && search.property_type_label,
         region,
-        max_price !== null && `up to ${formatPrice(max_price)}`,
+        describePriceRange(min_price, max_price),
         min_bedrooms !== null && `${min_bedrooms}+ beds`,
     ]
         .filter(Boolean)
         .join(' · ');
+}
+
+function describePriceRange(min, max) {
+    if (min !== null && max !== null) {
+        return `${formatPrice(min)}–${formatPrice(max)}`;
+    }
+
+    if (min !== null) {
+        return `from ${formatPrice(min)}`;
+    }
+
+    return max !== null && `up to ${formatPrice(max)}`;
 }
 
 /**

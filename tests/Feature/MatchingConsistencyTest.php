@@ -41,6 +41,8 @@ class MatchingConsistencyTest extends TestCase
 
         $searches = collect([
             ['max_price' => 300_000],
+            ['min_price' => 300_000],
+            ['min_price' => 250_000, 'max_price' => 300_000],
             ['min_bedrooms' => 2],
             ['property_type' => PropertyType::Flat],
             ['region' => 'Leeds'],

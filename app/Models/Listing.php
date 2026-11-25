@@ -121,6 +121,10 @@ class Listing extends Model
             $query->where('property_type', $criteria->propertyType);
         }
 
+        if ($criteria->minPrice !== null) {
+            $query->where('price', '>=', $criteria->minPrice);
+        }
+
         if ($criteria->maxPrice !== null) {
             $query->where('price', '<=', $criteria->maxPrice);
         }
