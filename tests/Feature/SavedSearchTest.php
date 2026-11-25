@@ -69,6 +69,20 @@ class SavedSearchTest extends TestCase
         $this->assertNull($search->min_bedrooms);
     }
 
+    public function test_a_search_can_have_a_minimum_price_on_its_own(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/saved-searches', ['min_price' => '200000'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/saved-searches');
+
+        $search = $user->savedSearches()->sole();
+        $this->assertSame(200_000, $search->min_price);
+        $this->assertNull($search->max_price);
+    }
+
     /**
      * A search with no criteria would alert on every new listing.
      */

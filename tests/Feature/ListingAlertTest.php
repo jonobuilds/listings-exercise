@@ -190,6 +190,21 @@ class ListingAlertTest extends TestCase
         $this->assertTrue($listedAt->equalTo($listing->listed_at));
     }
 
+    public function test_publishing_a_listing_that_is_already_live_changes_nothing(): void
+    {
+        $listing = Listing::factory()->live()->for($this->leeds)->create();
+        $listedAt = $listing->listed_at;
+        $announced = 0;
+        Event::listen(ListingWentLive::class, function () use (&$announced) {
+            $announced++;
+        });
+
+        $this->publish($listing);
+
+        $this->assertSame(0, $announced);
+        $this->assertTrue($listedAt->equalTo($listing->refresh()->listed_at));
+    }
+
     public function test_publishing_a_draft_sets_its_listing_date(): void
     {
         $listing = $this->draftListing();
@@ -232,6 +247,22 @@ class ListingAlertTest extends TestCase
 
         $this->assertSame(0, $generate->handle($listing), 'The model hook already alerted.');
         $this->assertDatabaseCount('listing_alerts', 1);
+    }
+
+    public function test_alerts_are_removed_with_their_user_or_listing(): void
+    {
+        $search = SavedSearch::factory()->create(['region' => 'Leeds']);
+        $first = Listing::factory()->live()->for($this->leeds)->create();
+        $second = Listing::factory()->live()->for($this->leeds)->create();
+        $this->assertDatabaseCount('listing_alerts', 2);
+
+        $first->delete();
+        $this->assertDatabaseCount('listing_alerts', 1);
+
+        $search->user->delete();
+        $this->assertDatabaseCount('listing_alerts', 0);
+        $this->assertModelMissing($search);
+        $this->assertModelExists($second);
     }
 
     public function test_generating_alerts_ignores_listings_that_are_not_live(): void

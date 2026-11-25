@@ -65,6 +65,21 @@ class ListingPageTest extends TestCase
             );
     }
 
+    /**
+     * The min <= max check only applies when a max is given; a plain
+     * `lte:max_price` would reject a minimum on its own.
+     */
+    public function test_index_accepts_a_minimum_price_on_its_own(): void
+    {
+        Listing::factory()->live()->create(['price' => 150_000]);
+        Listing::factory()->live()->create(['price' => 250_000]);
+
+        $this->get('/?min_price=200000&per_page=100')
+            ->assertOk()
+            ->assertSessionHasNoErrors()
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('listings.data', 1));
+    }
+
     public function test_index_rejects_a_minimum_price_above_the_maximum(): void
     {
         $this->get('/?min_price=400000&max_price=300000')

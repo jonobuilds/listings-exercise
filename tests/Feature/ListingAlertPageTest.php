@@ -113,6 +113,23 @@ class ListingAlertPageTest extends TestCase
         $this->assertSame($few, $queriesFor());
     }
 
+    public function test_alerts_are_paginated(): void
+    {
+        $user = User::factory()->create();
+        ListingAlert::factory(16)->for($user)->create();
+
+        $this->actingAs($user)
+            ->get('/alerts')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('alerts.data', 15)
+                ->where('alerts.meta.last_page', 2)
+            );
+
+        $this->actingAs($user)
+            ->get('/alerts?page=2')
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('alerts.data', 1));
+    }
+
     public function test_guests_are_sent_to_the_listings(): void
     {
         $this->get('/alerts')->assertRedirect('/');
