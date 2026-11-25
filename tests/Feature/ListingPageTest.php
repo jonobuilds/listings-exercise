@@ -6,6 +6,7 @@ use App\Enums\PropertyType;
 use App\Models\Branch;
 use App\Models\Listing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -121,6 +122,28 @@ class ListingPageTest extends TestCase
 
         $this->assertSame([], array_intersect($first, $second), 'Pages must not overlap.');
         $this->assertCount(6, array_unique([...$first, ...$second]));
+    }
+
+    /**
+     * Each card shows its branch. Loading branches one listing at a time
+     * would add a query per row, so a bigger page must not cost more queries.
+     */
+    public function test_index_query_count_does_not_grow_with_the_page_size(): void
+    {
+        $queriesFor = function (int $perPage): int {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->get("/?per_page={$perPage}")->assertOk();
+            DB::disableQueryLog();
+
+            return count(DB::getQueryLog());
+        };
+
+        // Every listing on its own branch, so a per-row lookup can't be served
+        // by a single cached model.
+        Listing::factory(10)->live()->create();
+
+        $this->assertSame($queriesFor(2), $queriesFor(10));
     }
 
     public function test_show_renders_a_single_listing(): void
