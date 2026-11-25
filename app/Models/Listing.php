@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Data\ListingCriteria;
 use App\Enums\ListingStatus;
 use App\Enums\PropertyType;
 use Database\Factories\ListingFactory;
@@ -81,5 +82,32 @@ class Listing extends Model
     public function scopeLive(Builder $query): void
     {
         $query->where('status', ListingStatus::Live);
+    }
+
+    /**
+     * Listings that meet the given criteria. Null criteria are ignored.
+     *
+     * SavedSearch::scopeMatchingListing() asks the same question the other
+     * way round; keep the two in step.
+     *
+     * @param  Builder<Listing>  $query
+     */
+    public function scopeMatching(Builder $query, ListingCriteria $criteria): void
+    {
+        if ($criteria->propertyType !== null) {
+            $query->where('property_type', $criteria->propertyType);
+        }
+
+        if ($criteria->maxPrice !== null) {
+            $query->where('price', '<=', $criteria->maxPrice);
+        }
+
+        if ($criteria->minBedrooms !== null) {
+            $query->where('bedrooms', '>=', $criteria->minBedrooms);
+        }
+
+        if ($criteria->region !== null) {
+            $query->whereHas('branch', fn (Builder $branch) => $branch->where('region', $criteria->region));
+        }
     }
 }

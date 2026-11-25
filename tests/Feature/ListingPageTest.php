@@ -85,11 +85,15 @@ class ListingPageTest extends TestCase
 
     public function test_index_passes_current_filters_back_to_the_page(): void
     {
-        $this->get('/?max_price=300000&min_bedrooms=2')
+        $this->get('/?max_price=300000&min_bedrooms=2&property_type=flat')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('filters.max_price', '300000')
-                ->where('filters.min_bedrooms', '2')
+                ->where('filters', [
+                    'property_type' => 'flat',
+                    'max_price' => 300000,
+                    'min_bedrooms' => 2,
+                    'region' => null,
+                ])
             );
     }
 
