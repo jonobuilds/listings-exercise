@@ -25,6 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
             HandleInertiaRequests::class,
         ]);
+
+        // There's no login page to send guests to; the only guest is an
+        // unseeded database, so send them to the public listings instead.
+        $middleware->redirectGuestsTo(fn () => route('listings.index'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

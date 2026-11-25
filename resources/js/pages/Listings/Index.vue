@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '../../components/AppLayout.vue';
 import ListingCard from '../../components/ListingCard.vue';
 import ListingFilters from '../../components/ListingFilters.vue';
@@ -45,6 +45,18 @@ function reset() {
     form.value = { property_type: '', region: '', min_bedrooms: '', max_price: '' };
     search();
 }
+
+// Saving uses the filters behind the results on screen (from the URL), not
+// edits to the form that haven't been searched yet.
+const appliedFilters = computed(() =>
+    Object.fromEntries(Object.entries(props.filters).filter(([, value]) => value !== null)),
+);
+const canSaveSearch = computed(() => Object.keys(appliedFilters.value).length > 0);
+const saveError = computed(() => Object.values(usePage().props.errors ?? {})[0]);
+
+function saveSearch() {
+    router.post('/saved-searches', appliedFilters.value);
+}
 </script>
 
 <template>
@@ -60,10 +72,23 @@ function reset() {
             @reset="reset"
         />
 
-        <p class="mb-4 text-sm text-slate-500" aria-live="polite">
-            <span v-if="processing">Loading…</span>
-            <span v-else>{{ listings.meta.total }} listing(s) found</span>
-        </p>
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-slate-500" aria-live="polite">
+                <span v-if="processing">Loading…</span>
+                <span v-else>{{ listings.meta.total }} listing(s) found</span>
+            </p>
+
+            <button
+                v-if="canSaveSearch"
+                type="button"
+                class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-100"
+                @click="saveSearch"
+            >
+                Save this search
+            </button>
+        </div>
+
+        <p v-if="saveError" class="mb-4 text-sm text-red-700" role="alert">{{ saveError }}</p>
 
         <div
             v-if="listings.data.length"
