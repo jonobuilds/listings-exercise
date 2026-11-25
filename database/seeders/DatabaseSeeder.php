@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
         // A saved search for the demo user, then two of its region's drafts
         // published through the real path, so the alerts page has something
         // to show and the remaining drafts are there to publish by hand.
-        $region = $branches->first()->region;
+        $region = $branches->firstOrFail()->region;
         $demoUser->savedSearches()->create(['region' => $region]);
 
         Listing::query()

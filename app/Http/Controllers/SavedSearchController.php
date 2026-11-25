@@ -5,16 +5,20 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSavedSearchRequest;
 use App\Http\Resources\SavedSearchResource;
 use App\Models\SavedSearch;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Behind the `auth` middleware, so #[CurrentUser] is never null here.
+ */
 class SavedSearchController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(#[CurrentUser] User $user): Response
     {
-        $savedSearches = $request->user()
+        $savedSearches = $user
             ->savedSearches()
             ->latest()
             ->orderByDesc('id')
@@ -29,9 +33,9 @@ class SavedSearchController extends Controller
      * Saving doesn't backfill alerts for listings that already match: the
      * user is saving from those very results. Alerts are for what's new.
      */
-    public function store(StoreSavedSearchRequest $request): RedirectResponse
+    public function store(StoreSavedSearchRequest $request, #[CurrentUser] User $user): RedirectResponse
     {
-        $request->user()->savedSearches()->create($request->criteria()->toArray());
+        $user->savedSearches()->create($request->criteria()->toArray());
 
         return redirect()->route('saved-searches.index');
     }

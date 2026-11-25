@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ListingAlertResource;
 use App\Models\Listing;
-use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,10 +16,12 @@ class ListingAlertController extends Controller
      *
      * Only listings still on the market are shown: an alert for one that has
      * since sold would link to a page that 404s.
+     *
+     * Behind the `auth` middleware, so #[CurrentUser] is never null here.
      */
-    public function index(Request $request): Response
+    public function index(#[CurrentUser] User $user): Response
     {
-        $alerts = $request->user()
+        $alerts = $user
             ->listingAlerts()
             ->whereIn('listing_id', Listing::query()->live()->select('id'))
             ->with(['listing.branch', 'savedSearch'])
