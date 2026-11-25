@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Data\ListingCriteria;
 use App\Enums\ListingStatus;
 use App\Enums\PropertyType;
+use App\Events\ListingWentLive;
 use Database\Factories\ListingFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -50,6 +51,28 @@ class Listing extends Model
         'status',
         'listed_at',
     ];
+
+    /**
+     * Announce a listing coming on the market, however it got there: created
+     * as live, or moved to live from draft, under offer or sold.
+     *
+     * Bulk query updates (Listing::query()->update(...)) skip model events,
+     * so they don't raise this and don't generate alerts.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (Listing $listing) {
+            if ($listing->status === ListingStatus::Live) {
+                ListingWentLive::dispatch($listing);
+            }
+        });
+
+        static::updated(function (Listing $listing) {
+            if ($listing->wasChanged('status') && $listing->status === ListingStatus::Live) {
+                ListingWentLive::dispatch($listing);
+            }
+        });
+    }
 
     /**
      * @return array<string, string>

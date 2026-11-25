@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -75,5 +76,28 @@ class ActAsDemoUserTest extends TestCase
             ->assertOk()
             ->assertJsonPath('request_user', $other->email)
             ->assertJsonPath('auth_user', $other->email);
+    }
+
+    /**
+     * Laravel sorts route middleware by priority, which can run `auth` ahead
+     * of the stub. The demo user must already be set by the time it checks.
+     */
+    #[DataProvider('userOnlyPages')]
+    public function test_the_demo_user_gets_past_the_auth_middleware(string $url): void
+    {
+        $this->seed();
+
+        $this->get($url)->assertOk();
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function userOnlyPages(): array
+    {
+        return [
+            'saved searches' => ['/saved-searches'],
+            'alerts' => ['/alerts'],
+        ];
     }
 }

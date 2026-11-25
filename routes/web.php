@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ListingAlertController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\SavedSearchController;
 use Illuminate\Support\Facades\Route;
@@ -13,4 +14,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/saved-searches/{savedSearch}', [SavedSearchController::class, 'destroy'])
         ->can('delete', 'savedSearch')
         ->name('saved-searches.destroy');
+
+    Route::get('/alerts', [ListingAlertController::class, 'index'])->name('alerts.index');
 });

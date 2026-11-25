@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ActAsDemoUser;
 use App\Http\Middleware\HandleInertiaRequests;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -25,6 +26,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
             HandleInertiaRequests::class,
         ]);
+
+        // Route middleware is sorted by priority, which would run `auth` (and
+        // `can`) ahead of the stub and see a guest. Resolve the user first.
+        $middleware->prependToPriorityList(
+            before: AuthenticatesRequests::class,
+            prepend: ActAsDemoUser::class,
+        );
 
         // There's no login page to send guests to; the only guest is an
         // unseeded database, so send them to the public listings instead.
