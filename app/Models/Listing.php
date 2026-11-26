@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Data\ListingCriteria;
 use App\Enums\ListingStatus;
 use App\Enums\PropertyType;
+use App\Events\ListingWentLive;
 use Database\Factories\ListingFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -51,6 +53,28 @@ class Listing extends Model
     ];
 
     /**
+     * Announce a listing coming on the market, however it got there: created
+     * as live, or moved to live from draft, under offer or sold.
+     *
+     * Bulk query updates (Listing::query()->update(...)) skip model events,
+     * so they don't raise this and don't generate alerts.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (Listing $listing) {
+            if ($listing->status === ListingStatus::Live) {
+                ListingWentLive::dispatch($listing);
+            }
+        });
+
+        static::updated(function (Listing $listing) {
+            if ($listing->wasChanged('status') && $listing->status === ListingStatus::Live) {
+                ListingWentLive::dispatch($listing);
+            }
+        });
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -81,5 +105,36 @@ class Listing extends Model
     public function scopeLive(Builder $query): void
     {
         $query->where('status', ListingStatus::Live);
+    }
+
+    /**
+     * Listings that meet the given criteria. Null criteria are ignored.
+     *
+     * SavedSearch::scopeMatchingListing() asks the same question the other
+     * way round; keep the two in step.
+     *
+     * @param  Builder<Listing>  $query
+     */
+    public function scopeMatching(Builder $query, ListingCriteria $criteria): void
+    {
+        if ($criteria->propertyType !== null) {
+            $query->where('property_type', $criteria->propertyType);
+        }
+
+        if ($criteria->minPrice !== null) {
+            $query->where('price', '>=', $criteria->minPrice);
+        }
+
+        if ($criteria->maxPrice !== null) {
+            $query->where('price', '<=', $criteria->maxPrice);
+        }
+
+        if ($criteria->minBedrooms !== null) {
+            $query->where('bedrooms', '>=', $criteria->minBedrooms);
+        }
+
+        if ($criteria->region !== null) {
+            $query->whereHas('branch', fn (Builder $branch) => $branch->where('region', $criteria->region));
+        }
     }
 }
